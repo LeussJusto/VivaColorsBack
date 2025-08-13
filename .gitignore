@@ -1,0 +1,32 @@
+# Ignorar node_modules (siempre)
+node_modules/
+
+# Archivos de entorno (variables sensibles)
+.env
+.env.local
+.env.development
+.env.test
+
+# Logs
+*.log
+logs/
+
+# Archivos del sistema
+.DS_Store
+.idea/
+.vscode/
+
+# Dependencias y builds
+/dist/
+/build/
+*.exe
+*.out
+
+# Coverage (si usas pruebas)
+coverage/
+.nyc_output/
+
+# Archivos específicos de npm/yarn
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

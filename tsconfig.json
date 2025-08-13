@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* Directorios */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Configuración de Node.js */
+    "module": "CommonJS",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+
+    /* Mapas y compilación */
+    "sourceMap": true,
+    "declaration": false,
+
+    /* Tipos */
+    "types": ["node", "express"],
+
+    /* Reglas estrictas */
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
