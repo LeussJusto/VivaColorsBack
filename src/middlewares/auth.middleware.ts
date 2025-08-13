@@ -1,33 +1,44 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("JWT_SECRET no está definido en .env");
+interface JwtPayload {
+  id: string;
+  role: "user" | "admin";
+}
 
-// Extender Request para incluir `user`
-declare module "express-serve-static-core" {
-  interface Request {
-    user?: string | JwtPayload;
+// Middleware básico: verificar token
+export function verificarToken(req: Request, res: Response, next: NextFunction) {
+  const token = req.cookies.token || req.headers["authorization"]?.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Acceso denegado. Token requerido" });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET no definido");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+    (req as any).user = decoded; // Guardar datos en la request
+    next();
+  } catch {
+    return res.status(403).json({ error: "Token inválido o expirado" });
   }
 }
 
-export const auth = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const token = req.cookies?.token;
-
-    if (!token) {
-      return res.status(401).json({ message: "No token, authorization denied" });
+// Middleware extra: verificar rol
+export function verificarRol(rolesPermitidos: ("user" | "admin")[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const usuario = (req as any).user;
+    if (!usuario) {
+      return res.status(401).json({ error: "No se encontró usuario en la solicitud" });
     }
 
-    jwt.verify(token, JWT_SECRET, (err: jwt.VerifyErrors | null, decoded: string | JwtPayload | undefined) => {
-      if (err) {
-        return res.status(401).json({ message: "Token is not valid" });
-      }
+    if (!rolesPermitidos.includes(usuario.role)) {
+      return res.status(403).json({ error: "No tienes permisos para acceder a esta ruta" });
+    }
 
-      req.user = decoded; // Guardamos info del token en req.user
-      next();
-    });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    next();
+  };
+}
