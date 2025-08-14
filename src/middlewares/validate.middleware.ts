@@ -107,3 +107,40 @@ export function validateUpdateQuoteStatus(req: Request, res: Response, next: Nex
 
   next();
 }
+
+// Validación de creación de orden
+export async function validateCreateOrder(req: Request, res: Response, next: NextFunction) {
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Debe agregar al menos un producto" });
+  }
+
+  for (const item of items) {
+    if (!item.product || item.quantity === undefined) {
+      return res.status(400).json({ error: "Cada item debe tener product y quantity" });
+    }
+
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      return res.status(400).json({ error: "La cantidad debe ser un número entero mayor a 0" });
+    }
+
+    const productExists = await Product.findById(item.product);
+    if (!productExists) {
+      return res.status(400).json({ error: `Producto ${item.product} no encontrado` });
+    }
+  }
+
+  next();
+}
+
+export function validateUpdateOrderStatus(req: Request, res: Response, next: NextFunction) {
+  const { status } = req.body;
+  const validStatuses = ["pendiente", "procesando", "enviado", "entregado", "cancelado"];
+
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: "Estado inválido" });
+  }
+
+  next();
+}
