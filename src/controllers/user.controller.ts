@@ -7,11 +7,6 @@ export async function registerUser(req: Request, res: Response) {
   try {
     const { name, email, password, role } = req.body;
 
-    // Validar datos
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "Todos los campos son requeridos" });
-    }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "El usuario ya existe" });
@@ -33,23 +28,16 @@ export async function registerUser(req: Request, res: Response) {
   }
 }
 
+// Login simplificado (validación ya está en middleware)
 export async function loginUser(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email y contraseña son requeridos" });
-    }
-
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ error: "Credenciales inválidas" });
-    }
+    if (!user) return res.status(400).json({ error: "Credenciales inválidas" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Credenciales inválidas" });
-    }
+    if (!isMatch) return res.status(400).json({ error: "Credenciales inválidas" });
 
     if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET no definido");
     const token = jwt.sign(
@@ -59,7 +47,6 @@ export async function loginUser(req: Request, res: Response) {
     );
 
     res.cookie("token", token, { httpOnly: true, secure: false });
-
     res.json({ message: "Login exitoso", token });
   } catch (err) {
     res.status(500).json({ error: "Error al iniciar sesión" });
