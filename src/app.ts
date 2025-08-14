@@ -6,15 +6,12 @@ import userRoutes from "./routes/user.routes";
 
 const app = express();
 
-// Middlewares
-app.use(morgan("dev"));          // Logs de peticiones
-app.use(express.json());         // Parsear JSON
-app.use(cookieParser());         // Leer cookies
+app.use(morgan("dev"));          
+app.use(express.json());         
+app.use(cookieParser());         
 
-// Rutas
 app.use("/api/users", userRoutes);
 
-// Ruta base para pruebas
 app.get("/", (req, res) => {
   res.send("✅ Backend Viba Colors corriendo");
 });

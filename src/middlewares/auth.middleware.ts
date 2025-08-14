@@ -6,7 +6,6 @@ interface JwtPayload {
   role: "user" | "admin";
 }
 
-// Middleware básico: verificar token
 export function verificarToken(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies.token || req.headers["authorization"]?.split(" ")[1];
 
@@ -20,14 +19,13 @@ export function verificarToken(req: Request, res: Response, next: NextFunction) 
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-    (req as any).user = decoded; // Guardar datos en la request
+    (req as any).user = decoded; 
     next();
   } catch {
     return res.status(403).json({ error: "Token inválido o expirado" });
   }
 }
 
-// Middleware extra: verificar rol
 export function verificarRol(rolesPermitidos: ("user" | "admin")[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const usuario = (req as any).user;
