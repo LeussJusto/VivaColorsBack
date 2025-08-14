@@ -99,14 +99,19 @@ export async function validateCreateQuote(req: Request, res: Response, next: Nex
 }
 
 export function validateUpdateQuoteStatus(req: Request, res: Response, next: NextFunction) {
-  const { status } = req.body;
+  const { status, rejectionReason } = req.body;
 
-  if (!status || !["pendiente", "aprobada", "rechazada"].includes(status)) {
+  if (!["aprobada", "rechazada"].includes(status)) {
     return res.status(400).json({ error: "Estado inválido" });
+  }
+
+  if (status === "rechazada" && !rejectionReason) {
+    return res.status(400).json({ error: "Debe indicar el motivo del rechazo" });
   }
 
   next();
 }
+
 
 // Validación de creación de orden
 export async function validateCreateOrder(req: Request, res: Response, next: NextFunction) {

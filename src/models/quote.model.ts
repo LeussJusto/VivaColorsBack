@@ -11,6 +11,7 @@ export interface IQuote extends Document {
   items: IQuoteItem[];
   total: number;
   status: "pendiente" | "aprobada" | "rechazada";
+  rejectionReason?: string; // motivo de rechazo
   createdAt: Date;
 }
 
@@ -24,7 +25,12 @@ const quoteSchema = new Schema<IQuote>({
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   items: [quoteItemSchema],
   total: { type: Number, required: true },
-  status: { type: String, enum: ["pendiente", "aprobada", "rechazada"], default: "pendiente" },
+  status: {
+    type: String,
+    enum: ["pendiente", "aprobada", "rechazada"],
+    default: "pendiente",
+  },
+  rejectionReason: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
 });
 
