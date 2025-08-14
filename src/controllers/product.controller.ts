@@ -1,13 +1,9 @@
 import { Request, Response } from "express";
 import Product from "../models/product.model";
 
-// Crear producto (solo admin)
 export async function createProduct(req: Request, res: Response) {
   try {
     const { name, description, price, stock } = req.body;
-    if (!name || !description || !price || !stock) {
-      return res.status(400).json({ error: "Todos los campos son requeridos" });
-    }
 
     const existingProduct = await Product.findOne({ name });
     if (existingProduct) {
@@ -23,7 +19,6 @@ export async function createProduct(req: Request, res: Response) {
   }
 }
 
-// Listar productos con búsqueda y paginación
 export async function getProducts(req: Request, res: Response) {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
@@ -44,7 +39,6 @@ export async function getProducts(req: Request, res: Response) {
   }
 }
 
-// Actualizar producto (solo admin)
 export async function updateProduct(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -59,7 +53,6 @@ export async function updateProduct(req: Request, res: Response) {
   }
 }
 
-// Eliminar producto (solo admin)
 export async function deleteProduct(req: Request, res: Response) {
   try {
     const { id } = req.params;
