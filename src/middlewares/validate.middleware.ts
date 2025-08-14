@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import Product from "../models/product.model";
 
 // validicación registrar usuario
 export function validateRegister(req: Request, res: Response, next: NextFunction) {
@@ -66,6 +67,42 @@ export function validateUpdateProduct(req: Request, res: Response, next: NextFun
 
   if (stock !== undefined && (!Number.isInteger(stock) || stock < 0)) {
     return res.status(400).json({ error: "El stock debe ser un número entero >= 0" });
+  }
+
+  next();
+}
+
+// Validación para crear cotización
+export async function validateCreateQuote(req: Request, res: Response, next: NextFunction) {
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Debe agregar al menos un producto" });
+  }
+
+  for (const item of items) {
+    if (!item.product || item.quantity === undefined) {
+      return res.status(400).json({ error: "Cada item debe tener product y quantity" });
+    }
+
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      return res.status(400).json({ error: "La cantidad debe ser un número entero mayor a 0" });
+    }
+
+    const productExists = await Product.findById(item.product);
+    if (!productExists) {
+      return res.status(400).json({ error: `Producto ${item.product} no encontrado` });
+    }
+  }
+
+  next();
+}
+
+export function validateUpdateQuoteStatus(req: Request, res: Response, next: NextFunction) {
+  const { status } = req.body;
+
+  if (!status || !["pendiente", "aprobada", "rechazada"].includes(status)) {
+    return res.status(400).json({ error: "Estado inválido" });
   }
 
   next();
