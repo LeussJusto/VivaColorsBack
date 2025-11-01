@@ -1,24 +1,88 @@
 import express from "express";
-import morgan from "morgan";
-import cookieParser from "cookie-parser";
-import userRoutes from "./routes/user.routes";
-import productRoutes from "./routes/product.routes";
-import quoteRoutes from "./routes/quote.routes";
-import orderRoutes from "./routes/order.routes";
+import http from "http";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import type { Request as ExpressRequest } from "express";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import cors from "cors";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+import { express as voyagerMiddleware } from "graphql-voyager/middleware"; 
 
-const app = express();
+import { connectDB } from "./infrastructure/db/connection";
+import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
 
-app.use(morgan("dev"));          
-app.use(express.json());         
-app.use(cookieParser());         
+import { userSchema } from "./interface/graphql/schema/userSchema";
+import { userResolvers } from "./interface/graphql/resolvers/userResolver";
+import { productSchema } from "./interface/graphql/schema/productSchema";
+import { productResolvers } from "./interface/graphql/resolvers/productResolver";
+import { orderSchema } from "./interface/graphql/schema/orderSchema";
+import { orderResolvers } from "./interface/graphql/resolvers/OrderResolver";
+import { quoteSchema } from "./interface/graphql/schema/quoteSchema";
+import { quoteResolvers } from "./interface/graphql/resolvers/quoteResolvers";
 
-app.use("/api/users", userRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/quotes", quoteRoutes);
-app.use("/api/orders", orderRoutes);
+dotenv.config();
 
-app.get("/", (req, res) => {
-  res.send("✅ Backend Viba Colors corriendo");
-});
+export async function createApp() {
+  const app = express();
+  const httpServer = http.createServer(app);
 
-export default app;
+  await connectDB();
+
+  // Fusionar schemas y resolvers
+  const typeDefs = mergeTypeDefs([userSchema, productSchema, orderSchema, quoteSchema]);
+  const resolvers = mergeResolvers([userResolvers, productResolvers, orderResolvers, quoteResolvers]);
+
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    introspection: true, 
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  });
+
+  await server.start();
+
+  app.use(
+    "/graphql",
+    cors<cors.CorsRequest>(),
+    bodyParser.json(),
+    expressMiddleware(server, {
+      context: async ({ req }: { req: ExpressRequest }) => {
+        const authHeader = req.headers.authorization as string | undefined;
+        const token = authHeader?.startsWith("Bearer ")
+          ? authHeader.split(" ")[1]
+          : null;
+
+        if (!token) return {};
+
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+            id: string;
+            role: string;
+          };
+          return { user: decoded };
+        } catch (error) {
+          console.error("Token inválido:", error);
+          return {};
+        }
+      },
+    })
+  );
+
+  //  GraphQL Voyager
+  app.use(
+    "/voyager",
+    voyagerMiddleware({
+      endpointUrl: "/graphql",
+      displayOptions: {
+        sortByAlphabet: true,
+        showLeafFields: true,
+        skipRelay: false,
+        skipDeprecated: false,
+      },
+    })
+  );
+
+  return { app, httpServer };
+}
